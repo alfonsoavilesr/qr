@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Panel de codigos QR</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.js"></script>
+<style>
+  :root{
+    --bg:#fbf9f6; --card:#fff; --ink:#1a1714; --mut:#736d64;
+    --line:#e3ded4; --acc:#b8502f; --ok:#2f6b4f; --idle:#8a8376;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#14131a; --card:#1d1c24; --ink:#f1eee8; --mut:#9a948b;
+      --line:#2f2d38; --acc:#e08a5c; --ok:#5fae85; --idle:#7d776d;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:15px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+       padding-block:36px;padding-left:16px;padding-right:16px}
+  .w{max-width:900px;margin:0 auto}
+  header{margin-bottom:22px}
+  h1{font-size:23px;margin:0 0 6px;letter-spacing:-.015em;text-wrap:balance}
+  .sub{color:var(--mut);font-size:14px;margin:0;max-width:62ch}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 22px;align-items:center}
+  button{
+    padding:9px 15px;border-radius:9px;border:1px solid var(--line);
+    background:var(--card);color:var(--ink);font:inherit;font-size:13px;font-weight:600;cursor:pointer;
+  }
+  button.p{background:var(--acc);border-color:var(--acc);color:#fff}
+  button:hover{filter:brightness(1.06)}
+  button:focus-visible,a:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+  .tally{color:var(--mut);font-size:13px;margin-left:auto;font-variant-numeric:tabular-nums}
+  .note{border:1px solid var(--line);background:var(--card);border-radius:12px;
+        padding:14px 16px;color:var(--mut);font-size:13.5px;margin-bottom:20px}
+  .note b{color:var(--ink)}
+  .rows{display:flex;flex-direction:column;gap:10px}
+  .row{
+    background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:12px 14px;display:grid;grid-template-columns:58px 1fr auto;gap:14px;align-items:center;
+  }
+  @media (max-width:620px){
+    .row{grid-template-columns:48px 1fr}
+    .row .acts{grid-column:1/-1;justify-content:flex-start}
+    .thumb{width:48px;height:48px}
+  }
+  .thumb{width:58px;height:58px;border-radius:7px;background:#fff;padding:3px;border:1px solid var(--line)}
+  .thumb canvas{width:100%;height:100%;image-rendering:pixelated;display:block}
+  .code{font:700 12px/1 ui-monospace,Consolas,monospace;letter-spacing:.1em;color:var(--mut)}
+  .biz{font-weight:600;font-size:15px;margin:3px 0 2px;word-break:break-word}
+  .dest{font:12.5px/1.45 ui-monospace,Consolas,monospace;color:var(--mut);word-break:break-all}
+  .dest a{color:var(--acc)}
+  .chip{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;
+        text-transform:uppercase;padding:3px 8px;border-radius:99px;margin-left:7px;vertical-align:1px}
+  .on{background:rgba(47,107,79,.14);color:var(--ok)}
+  .off{background:rgba(138,131,118,.16);color:var(--idle)}
+  .acts{display:flex;gap:7px;flex-wrap:wrap}
+  .acts a{padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);
+          color:var(--ink);text-decoration:none;font-size:12.5px;font-weight:600;white-space:nowrap}
+  .acts a:hover{border-color:var(--acc);color:var(--acc)}
+  dialog{border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);
+         padding:24px;max-width:340px;text-align:center}
+  dialog::backdrop{background:rgba(0,0,0,.55)}
+  dialog canvas{width:240px;max-width:100%;height:auto;image-rendering:pixelated;
+                background:#fff;padding:8px;border-radius:8px}
+  dialog p{font:12px/1.5 ui-monospace,Consolas,monospace;color:var(--mut);word-break:break-all;margin:12px 0 16px}
+
+  #sheet{display:none}
+  @media print{
+    body{padding:0;background:#fff;color:#000}
+    header,.bar,.note,.rows{display:none !important}
+    #sheet{display:grid !important;grid-template-columns:repeat(3,1fr);gap:6mm}
+    .cell{border:1px dashed #bbb;padding:4mm;text-align:center;break-inside:avoid}
+    .cell canvas{width:38mm;height:38mm;image-rendering:pixelated}
+    .cell div{font:700 9pt ui-monospace,monospace;letter-spacing:.1em;color:#333;margin-top:2mm}
+  }
+</style>
+</head>
+<body>
+<div class="w">
+  <header>
+    <h1>Panel de codigos QR</h1>
+    <p class="sub">Cada codigo es un sticker ya impreso. Cambia su destino cuando quieras: el dibujo del QR nunca cambia.</p>
+  </header>
+
+  <div class="note" id="note" hidden></div>
+
+  <div class="bar">
+    <button class="p" id="print">Imprimir hoja de stickers</button>
+    <button id="reload">Actualizar estado</button>
+    <span class="tally" id="tally"></span>
+  </div>
+
+  <div class="rows" id="rows"></div>
+  <div id="sheet"></div>
+</div>
+
+<dialog id="dlg">
+  <canvas id="big" width="240" height="240"></canvas>
+  <p id="bigurl"></p>
+  <button id="close">Cerrar</button>
+</dialog>
+
+<script>
+var TOTAL = 20;
+function pad(n){ return (n < 10 ? '0' : '') + n; }
+
+/* Direccion publica desde la que se sirve este panel. */
+var BASE = location.origin + location.pathname.replace(/[^/]*$/, '');
+
+/* Repo en GitHub, deducido de usuario.github.io/repo/ */
+var REPO = (function(){
+  var m = location.hostname.match(/^([^.]+)\.github\.io$/);
+  if (!m) return null;
+  var seg = location.pathname.split('/').filter(Boolean)[0];
+  return seg ? m[1] + '/' + seg : m[1] + '/' + m[1] + '.github.io';
+})();
+var BRANCH = 'main';
+
+function qrCanvas(text, px){
+  var qr = null;
+  for (var t = 1; t <= 12; t++){
+    try { var q = qrcode(t, 'M'); q.addData(text); q.make(); qr = q; break; } catch (e) {}
+  }
+  var cv = document.createElement('canvas');
+  if (!qr) return cv;
+  var n = qr.getModuleCount(), qz = 3, tot = n + qz * 2;
+  var s = Math.max(1, Math.floor((px || 300) / tot));
+  cv.width = cv.height = tot * s;
+  var g = cv.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height);
+  g.fillStyle = '#000';
+  for (var r = 0; r < n; r++) for (var c = 0; c < n; c++)
+    if (qr.isDark(r, c)) g.fillRect((c + qz) * s, (r + qz) * s, s, s);
+  return cv;
+}
+
+function parse(html){
+  var d = html.match(/var\s+DESTINO\s*=\s*"([^"]*)"/);
+  var n = html.match(/var\s+NEGOCIO\s*=\s*"([^"]*)"/);
+  return { destino: d ? d[1] : '', negocio: n ? n[1] : '' };
+}
+
+function showBig(url){
+  var cv = qrCanvas(url, 480);
+  cv.id = 'big';
+  document.getElementById('big').replaceWith(cv);
+  document.getElementById('bigurl').textContent = url;
+  document.getElementById('dlg').showModal();
+}
+
+function row(i, info){
+  var code = pad(i), url = BASE + code + '/';
+  var on = !!(info && info.destino);
+
+  var el = document.createElement('div');
+  el.className = 'row';
+
+  var th = document.createElement('div');
+  th.className = 'thumb';
+  th.appendChild(qrCanvas(url, 116));
+
+  var mid = document.createElement('div');
+  mid.innerHTML = '<span class="code"></span>'
+    + '<span class="chip"></span>'
+    + '<div class="biz"></div><div class="dest"></div>';
+  mid.querySelector('.code').textContent = code;
+  var chip = mid.querySelector('.chip');
+  chip.className = 'chip ' + (on ? 'on' : 'off');
+  chip.textContent = on ? 'Asignado' : 'Sin programar';
+  mid.querySelector('.biz').textContent = (info && info.negocio) || (on ? 'Sin nombre' : 'Libre');
+
+  var dd = mid.querySelector('.dest');
+  if (on){
+    var a = document.createElement('a');
+    a.href = info.destino; a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = info.destino;
+    dd.appendChild(a);
+  } else {
+    dd.textContent = url;
+  }
+
+  var acts = document.createElement('div');
+  acts.className = 'acts';
+  var ver = document.createElement('a');
+  ver.href = url; ver.textContent = 'Ver QR';
+  ver.onclick = function(e){ e.preventDefault(); showBig(url); };
+  acts.appendChild(ver);
+  if (REPO){
+    var ed = document.createElement('a');
+    ed.href = 'https://github.com/' + REPO + '/edit/' + BRANCH + '/' + code + '/index.html';
+    ed.target = '_blank'; ed.rel = 'noopener';
+    ed.textContent = 'Cambiar destino';
+    acts.appendChild(ed);
+  }
+
+  el.appendChild(th); el.appendChild(mid); el.appendChild(acts);
+  return el;
+}
+
+function buildSheet(){
+  var s = document.getElementById('sheet');
+  s.innerHTML = '';
+  for (var i = 1; i <= TOTAL; i++){
+    var cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.appendChild(qrCanvas(BASE + pad(i) + '/', 300));
+    var lab = document.createElement('div');
+    lab.textContent = pad(i);
+    cell.appendChild(lab);
+    s.appendChild(cell);
+  }
+}
+
+function render(infos){
+  var rows = document.getElementById('rows');
+  rows.innerHTML = '';
+  var on = 0;
+  for (var i = 1; i <= TOTAL; i++){
+    var info = infos[i] || null;
+    if (info && info.destino) on++;
+    rows.appendChild(row(i, info));
+  }
+  document.getElementById('tally').textContent =
+    on + ' asignados / ' + (TOTAL - on) + ' libres';
+  buildSheet();
+}
+
+function note(html){
+  var n = document.getElementById('note');
+  n.innerHTML = html;
+  n.hidden = false;
+}
+
+function load(){
+  if (location.protocol === 'file:'){
+    note('<b>Abre este panel desde su direccion publica</b> (por ejemplo tuusuario.github.io/qr/) '
+       + 'para que pueda leer el estado de cada codigo y generar los QR con la URL correcta.');
+    render({});
+    return;
+  }
+  if (!REPO){
+    note('<b>Panel en modo lectura.</b> No detecte un dominio github.io, asi que no puedo armar '
+       + 'los enlaces de edicion. Todo lo demas funciona igual.');
+  }
+  var jobs = [];
+  for (var i = 1; i <= TOTAL; i++){
+    jobs.push(function(i){
+      return fetch(pad(i) + '/index.html', { cache: 'no-store' })
+        .then(function(r){ return r.ok ? r.text() : ''; })
+        .then(function(t){ return { i: i, info: t ? parse(t) : null }; })
+        .catch(function(){ return { i: i, info: null }; });
+    }(i));
+  }
+  Promise.all(jobs).then(function(res){
+    var m = {};
+    res.forEach(function(x){ m[x.i] = x.info; });
+    render(m);
+  });
+}
+
+document.getElementById('reload').onclick = load;
+document.getElementById('print').onclick = function(){ window.print(); };
+document.getElementById('close').onclick = function(){ document.getElementById('dlg').close(); };
+load();
+</script>
+</body>
+</html>

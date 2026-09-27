@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Abriendo…</title>
+
+<!-- =====================================================================
+     CODIGO 16
+     Para cambiar a donde apunta este QR: edita SOLO las dos lineas de
+     abajo y guarda (Commit changes). El cambio es inmediato, el sticker
+     impreso no se toca nunca.
+     Deja DESTINO vacio ("") si este codigo todavia no esta asignado.
+     ===================================================================== -->
+<script>
+var DESTINO = "";
+var NEGOCIO = "";
+</script>
+
+<script>if (DESTINO) location.replace(DESTINO);</script>
+
+<style>
+  :root{
+    --bg:#fbf9f6; --card:#fff; --ink:#1a1714; --mut:#736d64;
+    --line:#e3ded4; --acc:#b8502f;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#14131a;--card:#1d1c24;--ink:#f1eee8;--mut:#9a948b;--line:#2f2d38;--acc:#e08a5c}
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    display:grid; place-items:center; padding:24px;
+  }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:32px 28px; max-width:400px; width:100%; text-align:center;
+  }
+  .cod{
+    display:inline-block; font:600 12px/1 ui-monospace,Consolas,monospace;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--mut);
+    border:1px solid var(--line); border-radius:99px; padding:7px 13px; margin-bottom:18px;
+  }
+  h1{font-size:19px; margin:0 0 10px; text-wrap:balance}
+  p{margin:0; color:var(--mut); font-size:14px}
+  a.go{
+    display:inline-block; margin-top:20px; padding:12px 22px; border-radius:10px;
+    background:var(--acc); color:#fff; text-decoration:none; font-weight:600; font-size:15px;
+  }
+  .spin{
+    width:26px;height:26px;margin:0 auto 18px;border-radius:50%;
+    border:2.5px solid var(--line); border-top-color:var(--acc);
+    animation:r .7s linear infinite;
+  }
+  @keyframes r{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.spin{animation:none}}
+</style>
+</head>
+<body>
+  <div class="card">
+    <span class="cod">Codigo 16</span>
+    <div id="body"></div>
+  </div>
+
+<script>
+(function(){
+  var b = document.getElementById('body');
+  if (DESTINO) {
+    b.innerHTML = '<div class="spin"></div>'
+      + '<h1>Abriendo el enlace</h1>'
+      + '<p>Si no pasa nada en un segundo, toca el boton.</p>'
+      + '<a class="go" id="l">Continuar</a>';
+    document.getElementById('l').href = DESTINO;
+  } else {
+    b.innerHTML = '<h1>Este codigo aun no esta asignado</h1>'
+      + '<p>El QR funciona correctamente, pero todavia no tiene un destino configurado. Vuelve a intentarlo mas tarde.</p>';
+  }
+})();
+</script>
+</body>
+</html>
